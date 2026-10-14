@@ -1,3 +1,5 @@
+> **Test repo.** A copy of [`lloydtabb/malloyyo_examples`](https://github.com/lloydtabb/malloyyo_examples) for exercising Malloyyo's repo tools — adding a dataset from a chat, checking branches and pull requests, publishing. It has no webhooks, so changing it touches no live instance until someone publishes it. All data is public Parquet on Google Cloud Storage (`storage.googleapis.com/malloyyo/…`), read through one credential-free DuckDB connection.
+
 # Malloyyo examples
 
 Four example datasets in one repo. Point a Malloyyo instance at it and you get
