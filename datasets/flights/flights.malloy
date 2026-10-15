@@ -1,3 +1,5 @@
+##! experimental.givens
+
 // Flights model, built on the malloy_samples tables in the `md` connection.
 // flights is the hub; carriers, airports (origin and destination),
 // and aircraft -> aircraft_models hang off it as many-to-one joins.
@@ -219,3 +221,20 @@ source: flights is md.table('malloy_samples.main.flights') extend {
     order_by: flight_count desc
   }
 }
+
+// Names for the suggest list on the Origin filter: the busiest origins first.
+query: origin_suggest is flights -> {
+  group_by: origin_code
+  aggregate: flight_count
+  order_by: flight_count desc
+  limit: 500
+}
+
+// Dashboard filters. Each dashboard applies them in its own `where:`.
+given:
+  # label="Carrier" control=select suggest { source=carriers dimension=nickname }
+  CARRIER :: filter<string> is f''
+  # label="Origin airport" suggest { query=origin_suggest dimension=origin_code }
+  ORIGIN :: filter<string> is f''
+  # label="Departure date"
+  PERIOD :: filter<timestamp> is f''

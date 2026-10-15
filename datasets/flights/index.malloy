@@ -1,6 +1,14 @@
+##! experimental.givens
+
 ##" U.S. domestic flights with their carriers, origin and destination airports, and the aircraft that flew them.
 ## dataset { title="Flights" }
 
-import { flights, carriers, airports, aircraft, aircraft_models } from 'flights.malloy'
+import {
+  flights, carriers, airports, aircraft, aircraft_models,
+  origin_suggest, CARRIER, ORIGIN, PERIOD
+} from 'flights.malloy'
 
-export { flights, carriers, airports, aircraft, aircraft_models }
+export {
+  flights, carriers, airports, aircraft, aircraft_models,
+  origin_suggest, CARRIER, ORIGIN, PERIOD
+}
