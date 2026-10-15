@@ -1,0 +1,221 @@
+// Flights model, built on the malloy_samples tables in the `md` connection.
+// flights is the hub; carriers, airports (origin and destination),
+// and aircraft -> aircraft_models hang off it as many-to-one joins.
+
+#" U.S. aircraft models: manufacturer, model, seats, engines, weight, speed.
+source: aircraft_models is md.table('malloy_samples.main.aircraft_models') extend {
+  primary_key: aircraft_model_code
+
+  measure:
+    model_count is count()
+    avg_seats is seats.avg()
+    avg_speed is speed.avg()
+}
+
+#" Registered aircraft, keyed by tail number, with their model details.
+source: aircraft is md.table('malloy_samples.main.aircraft') extend {
+  primary_key: tail_num
+
+  join_one: aircraft_models with aircraft_model_code
+
+  measure:
+    aircraft_count is count()
+}
+
+#" Airlines, keyed by two-letter carrier code.
+source: carriers is md.table('malloy_samples.main.carriers') extend {
+  primary_key: code
+
+  measure:
+    carrier_count is count()
+}
+
+#" Airports and other aviation facilities, keyed by FAA/IATA code.
+source: airports is md.table('malloy_samples.main.airports') extend {
+  primary_key: code
+
+  measure:
+    airport_count is count()
+    avg_elevation is elevation.avg()
+}
+
+#" One row per flight (2000s U.S. domestic). Start here: joins to carrier,
+#" origin and destination airport, and the aircraft that flew it.
+source: flights is md.table('malloy_samples.main.flights') extend {
+  primary_key: id2
+
+  // Free up the names `origin` and `destination` for the airport joins.
+  rename: origin_code is origin
+  rename: destination_code is destination
+
+  join_one: carriers with carrier
+  join_one: origin is airports with origin_code
+  join_one: destination is airports with destination_code
+  join_one: aircraft with tail_num
+
+  dimension:
+    carrier_name is carriers.nickname
+    route is concat(origin_code, ' -> ', destination_code)
+    is_cancelled is cancelled = 'Y'
+    is_diverted is diverted = 'Y'
+    departure_year is dep_time.year
+    departure_quarter is dep_time.quarter
+    departure_month is dep_time.month
+    departure_day is dep_time.day
+    departure_day_of_week is dep_time.day_of_week
+    departure_hour is dep_time.hour
+    // Age of the aircraft on the day it flew; null when year_built is missing/implausible.
+    aircraft_age is pick dep_time.year - aircraft.year_built
+      when aircraft.year_built > 1900
+      else null
+
+  measure:
+    flight_count is count()
+    completed_flights is count() { where: cancelled = 'N' }
+    cancelled_count is count() { where: cancelled = 'Y' }
+    diverted_count is count() { where: diverted = 'Y' }
+    cancellation_rate is cancelled_count / flight_count
+
+    // Cancelled flights have no arrival delay, so on-time is measured against completed flights.
+    on_time_count is count() { where: arr_delay <= 15 }
+    on_time_rate is on_time_count / completed_flights
+
+    avg_dep_delay is dep_delay.avg()
+    avg_arr_delay is arr_delay.avg()
+    avg_taxi_out is taxi_out.avg()
+    avg_taxi_in is taxi_in.avg()
+    avg_flight_time is flight_time.avg()
+    avg_distance is distance.avg()
+    total_distance is distance.sum()
+
+    // Seats available across all flights flown (aircraft model seat count).
+    seat_capacity is aircraft.aircraft_models.seats.sum()
+
+    distinct_aircraft is count(tail_num)
+    distinct_routes is count(route)
+    distinct_origins is count(origin_code)
+
+  view: by_carrier is {
+    group_by: carrier_name
+    aggregate:
+      flight_count
+      avg_dep_delay
+      avg_arr_delay
+      on_time_rate
+      cancellation_rate
+    order_by: flight_count desc
+  }
+
+  view: by_year is {
+    group_by: departure_year
+    aggregate:
+      flight_count
+      avg_dep_delay
+      on_time_rate
+      cancellation_rate
+    order_by: departure_year
+  }
+
+  view: by_month is {
+    group_by: departure_month
+    aggregate:
+      flight_count
+      avg_dep_delay
+      on_time_rate
+    order_by: departure_month
+  }
+
+  view: by_day_of_week is {
+    group_by: departure_day_of_week
+    aggregate:
+      flight_count
+      avg_dep_delay
+      on_time_rate
+    order_by: departure_day_of_week
+  }
+
+  view: busiest_origins is {
+    group_by:
+      origin_code
+      origin_name is origin.full_name
+      origin_city is origin.city
+      origin_state is origin.state
+    aggregate:
+      flight_count
+      avg_dep_delay
+      on_time_rate
+    order_by: flight_count desc
+    limit: 25
+  }
+
+  view: top_routes is {
+    group_by: route
+    aggregate:
+      flight_count
+      avg_distance
+      avg_dep_delay
+      on_time_rate
+    order_by: flight_count desc
+    limit: 25
+  }
+
+  view: worst_delays_by_origin is {
+    where: origin.major = 'Y'
+    group_by:
+      origin_code
+      origin_city is origin.city
+    aggregate:
+      flight_count
+      avg_dep_delay
+    having: flight_count > 1000
+    order_by: avg_dep_delay desc
+    limit: 20
+  }
+
+  view: by_aircraft_model is {
+    group_by:
+      manufacturer is aircraft.aircraft_models.manufacturer
+      model is aircraft.aircraft_models.model
+      seats is aircraft.aircraft_models.seats
+    aggregate:
+      flight_count
+      distinct_aircraft
+      avg_distance
+      avg_dep_delay
+    order_by: flight_count desc
+    limit: 25
+  }
+
+  view: by_aircraft_age is {
+    where: aircraft_age != null
+    group_by: aircraft_age
+    aggregate:
+      flight_count
+      avg_dep_delay
+      cancellation_rate
+    order_by: aircraft_age
+  }
+
+  view: carrier_profile is {
+    group_by: carrier_name
+    aggregate:
+      flight_count
+      on_time_rate
+      avg_dep_delay
+    nest: top_origins is {
+      group_by: origin_code
+      aggregate: flight_count
+      order_by: flight_count desc
+      limit: 5
+    }
+    nest: top_aircraft is {
+      group_by:
+        manufacturer is aircraft.aircraft_models.manufacturer
+        model is aircraft.aircraft_models.model
+      aggregate: flight_count
+      order_by: flight_count desc
+      limit: 5
+    }
+    order_by: flight_count desc
+  }
+}
