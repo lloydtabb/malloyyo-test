@@ -62,12 +62,12 @@ source: overview_data is flights extend {
     order_by: weekday_sort
   }
 
-  # bar_chart { x=hour y=avg_dep_delay }
+  # bar_chart { x=hour_of_day y=avg_dep_delay }
   # colspan=3
   view: delay_by_hour is {
-    group_by: hour is departure_hour
+    group_by: hour_of_day is departure_hour
     aggregate: avg_dep_delay
-    order_by: hour
+    order_by: hour_of_day
   }
 
   # colspan=3
