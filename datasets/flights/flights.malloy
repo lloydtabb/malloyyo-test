@@ -62,7 +62,7 @@ source: flights is md.table('malloy_samples.main.flights') extend {
     departure_quarter is dep_time.quarter
     departure_month is dep_time.month
     departure_day is dep_time.day
-    departure_day_of_week is dep_time.day_of_week
+    departure_day_of_week is day_of_week(dep_time)
     departure_hour is dep_time.hour
     // Age of the aircraft on the day it flew; null when year_built is missing/implausible.
     aircraft_age is pick dep_time.year - aircraft.year_built
@@ -187,7 +187,7 @@ source: flights is md.table('malloy_samples.main.flights') extend {
   }
 
   view: by_aircraft_age is {
-    where: aircraft_age != null
+    where: aircraft_age is not null
     group_by: aircraft_age
     aggregate:
       flight_count
