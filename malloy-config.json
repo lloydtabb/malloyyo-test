@@ -2,9 +2,15 @@
   "connections": {
     "duckdb": {
       "is": "duckdb"
+    },
+    "md": {
+      "is": "duckdb",
+      "databasePath": "md:"
     }
   },
   "malloyyo": {
-    "image_hosts": ["image.tmdb.org"]
+    "image_hosts": [
+      "image.tmdb.org"
+    ]
   }
 }

@@ -1,0 +1,78 @@
+##! experimental.givens
+
+import "../index.malloy"
+
+source: fleet_data is flights extend {
+  where:
+    carrier_name ~ $CARRIER,
+    dep_time ~ $PERIOD
+
+  # colspan=2
+  view: kpis is {
+    aggregate:
+      flight_count
+      distinct_aircraft
+      avg_seats_per_flight is seat_capacity / flight_count
+      avg_aircraft_age is aircraft_age.avg()
+      avg_dep_delay
+      on_time_rate
+  }
+
+  # break
+  # bar_chart { x=aircraft_model y=flight_count }
+  # colspan=3
+  view: top_models is {
+    group_by: aircraft_model is concat(aircraft.aircraft_models.manufacturer, ' ', aircraft.aircraft_models.model)
+    aggregate: flight_count
+    order_by: flight_count desc
+    limit: 10
+  }
+
+  # bar_chart { x=manufacturer y=flight_count }
+  # colspan=3
+  view: by_manufacturer is {
+    group_by: manufacturer is aircraft.aircraft_models.manufacturer
+    aggregate: flight_count
+    order_by: flight_count desc
+    limit: 10
+  }
+
+  # bar_chart { x=aircraft_age y=flight_count }
+  # colspan=3
+  view: flights_by_age is {
+    where: aircraft_age >= 0 and aircraft_age <= 60
+    group_by: aircraft_age
+    aggregate: flight_count
+    order_by: aircraft_age
+  }
+
+  # bar_chart { x=aircraft_age y=avg_dep_delay }
+  # colspan=3
+  view: delay_by_age is {
+    where: aircraft_age >= 0 and aircraft_age <= 60
+    group_by: aircraft_age
+    aggregate: avg_dep_delay
+    order_by: aircraft_age
+  }
+
+  # colspan=6
+  view: models_table is {
+    group_by:
+      manufacturer is aircraft.aircraft_models.manufacturer
+      model is aircraft.aircraft_models.model
+      seats is aircraft.aircraft_models.seats
+    aggregate:
+      flight_count
+      distinct_aircraft
+      avg_distance
+      avg_dep_delay
+    order_by: flight_count desc
+    limit: 25
+  }
+
+  # colspan=6
+  view: carriers_fleet is carrier_profile
+}
+
+##" Which aircraft fly the flights: top models and manufacturers, aircraft age, and how delay varies with age. Filter by carrier or departure date.
+## artifact { title="Fleet & Aircraft" tiles=["fleet_data -> kpis", "fleet_data -> top_models", "fleet_data -> by_manufacturer", "fleet_data -> flights_by_age", "fleet_data -> delay_by_age", "fleet_data -> models_table", "fleet_data -> carriers_fleet"] dashboard_columns=6 }

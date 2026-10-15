@@ -1,0 +1,81 @@
+##! experimental.givens
+
+import "../index.malloy"
+
+// Every tile runs against this filtered source, so the given mapping
+// (where: ... ~ $GIVEN) is applied once. Referencing the givens here is what
+// makes the Carrier / Origin / Departure date controls render.
+source: overview_data is flights extend {
+  where:
+    carrier_name ~ $CARRIER,
+    origin_code ~ $ORIGIN,
+    dep_time ~ $PERIOD
+
+  # colspan=2
+  view: kpis is {
+    aggregate:
+      flight_count
+      on_time_rate
+      avg_dep_delay
+      cancellation_rate
+      distinct_aircraft
+      avg_distance
+  }
+
+  # break
+  # line_chart { x=departure_month y=flight_count }
+  # colspan=6
+  view: monthly_volume is by_month
+
+  # bar_chart { x=carrier_name y=flight_count }
+  # colspan=3
+  view: volume_by_carrier is {
+    group_by: carrier_name
+    aggregate: flight_count
+    order_by: flight_count desc
+  }
+
+  # bar_chart { x=carrier_name y=on_time_rate }
+  # colspan=3
+  view: on_time_by_carrier is {
+    group_by: carrier_name
+    aggregate: on_time_rate
+    order_by: on_time_rate desc
+  }
+
+  // Display a name, sort by a number: the sort key is a measure so it never
+  // becomes a chart channel.
+  # bar_chart { x=weekday y=avg_dep_delay }
+  # colspan=3
+  view: delay_by_weekday is {
+    group_by: weekday is
+      pick 'Sun' when day_of_week(dep_time) = 1
+      pick 'Mon' when day_of_week(dep_time) = 2
+      pick 'Tue' when day_of_week(dep_time) = 3
+      pick 'Wed' when day_of_week(dep_time) = 4
+      pick 'Thu' when day_of_week(dep_time) = 5
+      pick 'Fri' when day_of_week(dep_time) = 6
+      else 'Sat'
+    aggregate:
+      avg_dep_delay
+      weekday_sort is min(day_of_week(dep_time))
+    order_by: weekday_sort
+  }
+
+  # bar_chart { x=hour_of_day y=avg_dep_delay }
+  # colspan=3
+  view: delay_by_hour is {
+    group_by: hour_of_day is departure_hour
+    aggregate: avg_dep_delay
+    order_by: hour_of_day
+  }
+
+  # colspan=3
+  view: origins is busiest_origins
+
+  # colspan=3
+  view: routes is top_routes
+}
+
+##" Flight volume, on-time performance and delays by carrier, day and hour. Filter by carrier, origin airport or departure date.
+## artifact { title="Flights Overview" tiles=["overview_data -> kpis", "overview_data -> monthly_volume", "overview_data -> volume_by_carrier", "overview_data -> on_time_by_carrier", "overview_data -> delay_by_weekday", "overview_data -> delay_by_hour", "overview_data -> origins", "overview_data -> routes"] dashboard_columns=6 }
