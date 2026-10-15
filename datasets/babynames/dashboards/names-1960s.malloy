@@ -1,0 +1,88 @@
+##! experimental { access_modifiers givens }
+
+import "../index.malloy"
+
+// Baby Names of the 1960s. Every tile is a flat, named query filtered to
+// decade = 1960 (`decade` is a dimension on baby_names); names-1960s.jsx draws
+// them. No givens: the dashboard is about one fixed decade.
+
+// Risers / fallers only consider names with at least this many births in the
+// decade, so a name going from 3 to 40 births doesn't top the list.
+
+#" Births, top names, trends, risers and fallers, and brand-new names of the 1960s "
+# artifact { title="Baby names of the 1960s" }
+query: decade_1960s_total is baby_names -> {
+  where: decade = 1960
+  aggregate: total_babies
+}
+
+query: top_girls_1960s is baby_names -> {
+  where: decade = 1960 and gender = 'F'
+  group_by: name
+  aggregate: births is total_babies
+  order_by: births desc
+  limit: 10
+}
+
+query: top_boys_1960s is baby_names -> {
+  where: decade = 1960 and gender = 'M'
+  group_by: name
+  aggregate: births is total_babies
+  order_by: births desc
+  limit: 10
+}
+
+// The decade's five most popular names (genders combined), each with its births
+// per year. The jsx flattens `by_year` into plottable rows.
+query: top_names_by_year_1960s is baby_names -> {
+  where: decade = 1960
+  group_by: name
+  aggregate: births is total_babies
+  nest: by_year is {
+    group_by: birth_year
+    aggregate: births is total_babies
+    order_by: birth_year
+  }
+  order_by: births desc
+  limit: 5
+}
+
+// 1960 -> 1969 change in births per name.
+source: change_1960s is baby_names -> {
+  where: decade = 1960
+  group_by: name
+  aggregate:
+    births_1960 is total_babies { where: birth_year = 1960 }
+    births_1969 is total_babies { where: birth_year = 1969 }
+    births_decade is total_babies
+} -> {
+  where: births_decade >= 1000
+  select: name, births_1960, births_1969, change is births_1969 - births_1960
+}
+
+query: risers_1960s is change_1960s -> {
+  select: name, births_1960, births_1969, change
+  order_by: change desc
+  limit: 10
+}
+
+query: fallers_1960s is change_1960s -> {
+  select: name, births_1960, births_1969, change
+  order_by: change asc
+  limit: 10
+}
+
+// Names whose FIRST year in the data falls in 1960-1969, ranked by 1960s births.
+// The SSA data starts in 1910 and omits names with fewer than 5 births in a
+// year, so "first year" means first year above that threshold.
+query: new_names_1960s is baby_names -> {
+  group_by: name
+  aggregate:
+    first_year is earliest_year
+    births_1960s is total_babies { where: decade = 1960 }
+} -> {
+  where: first_year >= 1960 and first_year <= 1969
+  select: name, first_year, births_1960s
+  order_by: births_1960s desc
+  limit: 15
+}
