@@ -110,9 +110,10 @@ query: director_films is movies_norm -> {
     movie_thumb
     movie_url
   aggregate:
-    // max(), not sum(): these belong to the title, and the principals join
-    // fans each title out to one row per credited person.
-    votes is numVotes.max()
+    // total_votes is a symmetric sum, so the principals fan-out (one row per
+    // credited person) doesn't inflate it. share is per-title, so max() just
+    // picks it.
+    votes is total_votes
     share is vote_share.max()
     average_rating
   // Ordered by share of its release year — the same weighting that picked the

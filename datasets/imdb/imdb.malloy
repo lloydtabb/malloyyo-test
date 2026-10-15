@@ -85,6 +85,11 @@ source: movies is titles_table extend {
     row_count is count()
     # format="#,###" label="Total Ratings"
     total_ratings is sum(numVotes / 1000.0)
+    // Raw vote count (total_ratings is in thousands). sum() is a symmetric
+    // aggregate, so it is correct under the principals/genre join fan-out and at
+    // any grouping grain, per title or rolled up.
+    # format="#,###" label="Total Votes"
+    total_votes is numVotes.sum()
     # label="Average Rating"
     average_rating is averageRating.avg()
     # percent label="Percent of Titles"

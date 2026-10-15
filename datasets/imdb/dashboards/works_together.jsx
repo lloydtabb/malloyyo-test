@@ -419,9 +419,7 @@ function CollaboratorRow({ ink, row, rank, onPick }) {
           <ImdbLink ink={ink} url={row.person_url} who={row.person} size={12} />
         </div>
         <div style={{ fontSize: 11.5, color: ink.muted, margin: "3px 0 6px", fontVariantNumeric: "tabular-nums" }}>
-          {/* total_ratings is votes ÷ 1000 in the model — scale back before
-              compacting, or the suffix gets applied twice. */}
-          {row.shared_films} {row.shared_films === 1 ? "film" : "films"} together · {compact(Math.round(row.total_ratings * 1000))} ratings
+          {row.shared_films} {row.shared_films === 1 ? "film" : "films"} together · {compact(row.total_votes)} ratings
         </div>
         <RoleChips ink={ink} roles={row.roles} max={3} />
       </div>
@@ -474,7 +472,7 @@ export default function Dashboard({ dashboard, givens }) {
       person: r.person,
       person_url: r.person_url || null,
       shared_films: num(r.shared_films),
-      total_ratings: num(r.total_ratings),
+      total_votes: num(r.total_votes),
       roles: (r.roles || []).map((x) => ({ role: x.role, title_count: num(x.title_count) })).filter((x) => x.role),
       films: (r.films || []).map((f) => ({
         tconst: f.tconst,
@@ -543,7 +541,7 @@ export default function Dashboard({ dashboard, givens }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 12 }}>
             <Stat ink={ink} label="Films" value={s ? num(s.title_count).toLocaleString() : "—"}
                   note="with 5,000+ ratings" />
-            <Stat ink={ink} label="Total ratings" value={s ? compact(Math.round(num(s.total_ratings) * 1000)) : "—"}
+            <Stat ink={ink} label="Total ratings" value={s ? compact(num(s.total_votes)) : "—"}
                   note="across every film" />
             <Stat ink={ink} label="Mean rating" value={s ? num(s.average_rating).toFixed(1) : "—"}
                   note="unweighted, per film" />
