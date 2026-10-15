@@ -1,0 +1,10 @@
+import "../index.malloy"
+
+#" Products and pricing by category, with the brands that carry the most products.
+# artifact { title="Product catalog" }
+# dashboard
+query: catalog is products -> {
+  # bar_chart
+  nest: by_category is by_category + { limit: 12 }
+  nest: top_brands is top_brands
+}
