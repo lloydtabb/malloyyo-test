@@ -38,10 +38,9 @@ query: genre_options is movies -> {
 }
 
 // One shelf per subgenre: every other genre GENRE pairs with, each nesting its
-// seven most-voted films. Grouping the nest by tconst collapses the
-// principal/genre join fan-out, and total_votes uses max() rather than sum() so
-// it stays the title's own vote count. Shelves are ordered by total_ratings, a
-// symmetric aggregate that survives the fan-out.
+// seven most-voted films. Grouping the nest by tconst gives one row per title,
+// and total_votes (a symmetric sum) is that title's own vote count. Shelves are
+// ordered by total_ratings.
 query: genre_shelves is movies -> {
   where: genre ~ $GENRE and genre != genre2 and release_year ~ $RELEASE_YEAR
   group_by: subgenre is genre2
@@ -57,7 +56,7 @@ query: genre_shelves is movies -> {
       movie_url
     aggregate:
       # label="Votes"
-      total_votes is numVotes.max()
+      total_votes
       average_rating
     order_by: total_votes desc
     // Six rows' worth. The shelf shows seven at a time and reveals the rest on

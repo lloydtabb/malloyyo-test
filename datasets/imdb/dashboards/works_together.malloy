@@ -46,7 +46,7 @@ query: person_summary is movies -> {
   where: name ~ $NAME
   aggregate:
     title_count
-    total_ratings
+    total_votes
     average_rating
   // primaryName is NOT unique, so NAME can select more than one real person.
   // Nesting the ids rather than grouping by them keeps the headline numbers
@@ -80,7 +80,7 @@ query: collaborators is movies -> {
     person_url is name2_url
   aggregate:
     shared_films is title_count
-    total_ratings
+    total_votes
   // job2 comes from the same principals2 row the group is on, so this is the
   // COLLABORATOR's role, not a job breakdown of the films.
   nest: roles is {
@@ -96,14 +96,14 @@ query: collaborators is movies -> {
       release_year
       movie_thumb
       movie_url
-    // max(), not sum(): votes belong to the title, and the principals join
-    // fans each title out to one row per credited person.
+    // total_votes is a symmetric sum, so the principals fan-out (one row per
+    // credited person) doesn't inflate it.
     aggregate:
-      votes is numVotes.max()
+      votes is total_votes
       average_rating
     order_by: votes desc
     limit: 12
   }
-  order_by: shared_films desc, total_ratings desc
+  order_by: shared_films desc, total_votes desc
   limit: 24
 }
