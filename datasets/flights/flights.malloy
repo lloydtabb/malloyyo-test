@@ -89,7 +89,7 @@ source: flights is md.table('malloy_samples.main.flights') extend {
     total_distance is distance.sum()
 
     // Seats available across all flights flown (aircraft model seat count).
-    seat_capacity is aircraft.aircraft_models.seats.sum()
+    seat_capacity is sum(aircraft.aircraft_models.seats)
 
     distinct_aircraft is count(tail_num)
     distinct_routes is count(route)
